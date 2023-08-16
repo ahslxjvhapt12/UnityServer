@@ -49,5 +49,33 @@ public class NetworkManager
 
         Callback?.Invoke(msg.type, msg.message);
     }
+
+    public void PostRequest(string uri, Payload payload, Action<MessageType, string> Callback)
+    {
+        GameManager.Instance.StartCoroutine(PostCoroutine(uri, payload, Callback));
+    }
+
+    private IEnumerator PostCoroutine(string uri, Payload payload, Action<MessageType, string> Callback)
+    {
+        string url = $"{_host}:{_port}/{uri}";
+        Debug.Log(payload.GetJsonString());
+        //UnityWebRequest req = UnityWebRequest.Post(url, payload.GetJsonString(), "application/json");
+
+
+        UnityWebRequest req = UnityWebRequest.Post(url, payload.GetWWWForm());
+        //req.SetRequestHeader("Content-Type", "application/json");
+        //여기에가 토큰 셋팅도 해줘야 한다.
+
+        yield return req.SendWebRequest();
+
+        if (req.result != UnityWebRequest.Result.Success)
+        {
+            UIController.Instance.Message.AddMessage($"요청이 실패했습니다. {req.responseCode} Error on post", 3f);
+            yield break;
+        }
+
+        MessageDTO msg = JsonUtility.FromJson<MessageDTO>(req.downloadHandler.text);
+        Callback?.Invoke(msg.type, msg.message);
+    }
 }
 
